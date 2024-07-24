@@ -7,7 +7,7 @@ require("Pktgen")
 math.randomseed(os.time())
 
 local dstmac = "02:00:83:01:00:00"
-local srcmac = "02:00:83:01:00:01"
+local srcmac = "02:00:83:01:00:02"
 local pkt_size = 64
 -- Clear everything
 
