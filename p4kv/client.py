@@ -25,7 +25,8 @@ value = int(args.value)
 
 scapy.bind_layers(scapy.IP, KVS, proto=24)
 
-packet = scapy.Ether(src=mac_src, dst=mac_dst) / scapy.IP(dst=ip_dst) / KVS(key=key, value=value)
+# packet = scapy.Ether(src=mac_src, dst=mac_dst) / scapy.IP(dst=ip_dst) / KVS(key=key, value=value)
+packet = scapy.IP(dst=ip_dst) / KVS(key=key, value=value)
 print(packet.show())
 scapy.send(packet)
 
