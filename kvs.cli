@@ -1,0 +1,32 @@
+; SPDX-License-Identifier: BSD-3-Clause
+; Copyright(c) 2020 Intel Corporation
+
+# Example command line:
+#	./build/examples/dpdk-pipeline -l 0-1 -- -s ./examples/pipeline/examples/l2fwd.cli
+#
+# Once the application has started, the command to get the CLI prompt is:
+#	telnet 0.0.0.0 8086
+
+;
+; Pipeline code generation & shared object library build.
+;
+pipeline codegen p4kv/kv.spec /tmp/kv.c
+pipeline libbuild /tmp/kv.c /tmp/kv.so
+
+;
+; List of DPDK devices.
+;
+; Note: Customize the parameters below to match your setup.
+;
+mempool MEMPOOL0 meta 0 pkt 2176 pool 32K cache 256 numa 0
+ethdev 0000:04:00.0 rxq 1 128 MEMPOOL0 txq 1 512 promiscuous on
+
+;
+; List of pipelines.
+;
+pipeline PIPELINE0 build lib /tmp/kv.so io ./ethdev.io numa 0
+
+;
+; Pipelines-to-threads mapping.
+;
+pipeline PIPELINE0 enable thread 1

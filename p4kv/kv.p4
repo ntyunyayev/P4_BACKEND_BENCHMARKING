@@ -124,7 +124,7 @@ control MainControlImpl(
         hdrs.ipv4.dst_addr = hdrs.ipv4.src_addr;
         hdrs.ipv4.src_addr = tmp_ip;
 
-		send_to_port(istd.ingress_port);
+		send_to_port((PortId_t)0);
 	}
 
 	apply {
