@@ -9,22 +9,26 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define PORT 0;
+const uint16_t port = 0;
+
+int construct_packet(struct rte_mbuf *pkt, int key){
+
+}
 
 static int job(void *arg) {
+  struct rte_mbuf *pkt;
   struct port_init_ctx *ctx = (struct port_init_ctx *)arg;
-
+  uint16_t key;
+  uint16_t nb_tx;
+  struct rte_mempool *pool = ctx->mpool;
   while (1) {
-    printf("Enter key : ");
-    scanf("%d", &pkt_size);
-    pkt = rte_pktmbuf_alloc(ctx->mpool);
+    printf("Enter key to send : ");
+    scanf("%d", &key);
+    pkt = rte_pktmbuf_alloc(pool);
     if (pkt == NULL) {
       printf("Failed to allocate huge mbuf\n");
       return -1;
     }
-
-    pkt->data_len = pkt_size;
-    pkt->pkt_len = pkt_size;
     nb_tx = rte_eth_tx_burst(port, 0, &pkt, 1);
     if (unlikely(nb_tx != 1)) {
       printf("failed to send packet\n");
@@ -49,16 +53,23 @@ int main(int argc, char *argv[]) {
     rte_exit(EXIT_FAILURE, "Error with EAL initialization\n");
   argc -= ret;
   argv += ret;
+  port = atoi(argv[1]);
+  printf("Choosing port %d\n", port);
+  /* >8 End of initialization the Environment Abstraction Layer (EAL). */
+  /* Allocates mempool to hold the mbufs. 8< */
 
-  struct port_init_ctx *ctx = gu_port_init(PORT, 1, 1, 1024, 1024, 1500);
+  const uint16_t NB_QUEUES = 1;
+  struct port_init_ctx *ctx =
+      gu_port_init(port, NB_QUEUES, NB_QUEUES, GU_DEFAULT_RING_SIZE,
+                   GU_DEFAULT_RING_SIZE, GU_DEFAULT_MTU);
   if (ctx == NULL) {
-    printf("failed to init port\n");
-    return -1;
+    rte_exit(EXIT_FAILURE, "Cannot init port %" PRIu16 "\n", port);
   }
 
-  rte_lcore_foreach_worker(lcore_id) {
+  RTE_LCORE_FOREACH_WORKER(lcore_id) {
     rte_eal_remote_launch(job, (void *)ctx, lcore_id);
   }
+
   rte_eal_mp_wait_lcore();
 
   /* clean up the EAL */
