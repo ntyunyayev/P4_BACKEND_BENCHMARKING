@@ -10,8 +10,8 @@
 ;
 ; Pipeline code generation & shared object library build.
 ;
-pipeline codegen p4kv/kv.spec /tmp/kv.c
-pipeline libbuild /tmp/kv.c /tmp/kv.so
+pipeline codegen p4kv/kvs.spec /tmp/kvs.c
+pipeline libbuild /tmp/kvs.c /tmp/kvs.so
 
 ;
 ; List of DPDK devices.
@@ -24,7 +24,7 @@ ethdev 0000:00:09.0 rxq 1 128 MEMPOOL0 txq 1 512 promiscuous on
 ;
 ; List of pipelines.
 ;
-pipeline PIPELINE0 build lib /tmp/kv.so io ./ethdev.io numa 0
+pipeline PIPELINE0 build lib /tmp/kvs.so io ./ethdev.io numa 0
 
 ;
 ; Pipelines-to-threads mapping.

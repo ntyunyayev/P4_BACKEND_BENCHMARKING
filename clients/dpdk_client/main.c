@@ -31,8 +31,8 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
     ipv4_hdr->next_proto_id = kvs_protocol_id;
     ipv4_hdr->time_to_live = 64;
-    const char ip_src[128] = "192.168.0.1";
-    const char ip_dst[128] = "192.168.0.2";
+    const char ip_src[128] = "192.168.100.1";
+    const char ip_dst[128] = "192.168.100.2";
 
     if (inet_pton(AF_INET, ip_src, &ipv4_hdr->src_addr) != 1) {
         perror("inet_pton");
@@ -77,7 +77,7 @@ static int job(void* arg) {
             printf("failed to send packet\n");
             rte_pktmbuf_free(pkt);
         } else {
-            printf("Pkt sent\n");
+            printf("Pkt sent : %d\n",pkt->pkt_len);
         }
     }
 }
@@ -92,8 +92,10 @@ int receive_pkts(void) {
         }
         for (int i = 0; i < nb_rx; i++) {
             if (bufs[i]->pkt_len > 64) {
+                printf("#####Received packet#####\n");
                 printf("pkt_len : %d\n", bufs[i]->pkt_len);
                 printf("data_len : %d\n", bufs[i]->data_len);
+                printf("#########################\n");
             }
             rte_pktmbuf_free(bufs[i]);
         }
