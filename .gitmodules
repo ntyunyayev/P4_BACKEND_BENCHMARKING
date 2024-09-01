@@ -1,6 +1,3 @@
 [submodule "dpdk_utils"]
 	path = dpdk_utils
 	url = git@github.com:ntyunyayev/generic_dpdk_utils.git
-[submodule "generic_dpdk_utils"]
-	path = generic_dpdk_utils
-	url = git@github.com:ntyunyayev/generic_dpdk_utils.git

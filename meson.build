@@ -32,15 +32,12 @@ dependencies = []
 # DPDK dependency
 dependencies += dependency('libdpdk')
 
-srcs = [
-  'main.c',
-  '../dpdk_utils/gu.c'
-]
-inc_dirs += include_directories('../dpdk_utils/')
+srcs = ['clients/dpdk_client/main.c', 'dpdk_utils/gu.c']
+inc_dirs = include_directories('dpdk_utils/')
 executable(
   'dpdk_client',
   srcs,
-  dependencies: dpendencies,
+  dependencies: dependencies,
   include_directories: inc_dirs,
   install: false,
 )
