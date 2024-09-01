@@ -17,8 +17,7 @@ struct kvs_hdr {
 
 const uint16_t port = 0;
 const uint8_t kvs_protocol_id = 24;
-
-const struct rte_ether_addr src_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x02}};
+const struct rte_ether_addr src_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x00}};
 const struct rte_ether_addr dst_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x01}};
 
 void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
@@ -64,6 +63,7 @@ static int job(void* arg) {
 
 int main(int argc, char* argv[]) {
     // args
+    printf("Starting client\n");
     uint16_t lcore_id;
     int ret;
     /* Initializion the Environment Abstraction Layer (EAL). 8< */
@@ -71,6 +71,7 @@ int main(int argc, char* argv[]) {
     if (ret < 0) rte_exit(EXIT_FAILURE, "Error with EAL initialization\n");
     argc -= ret;
     argv += ret;
+    printf("EAL: Initialization complete\n");
     /* >8 End of initialization the Environment Abstraction Layer (EAL). */
     /* Allocates mempool to hold the mbufs. 8< */
     const uint16_t NB_QUEUES = 1;
