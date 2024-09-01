@@ -15,17 +15,10 @@ project(
   'C',
   'CPP',
   license: 'Proprietary',
-  default_options: ['buildtype=release'],
+  default_options: ['buildtype=debugoptimized', 'warning_level=3'],
 )
 
 # Comment this line to restore warnings of experimental DOCA features
-add_project_arguments(
-  [
-    '-ggdb',
-    '-g',
-  ],
-  language: ['c', 'cpp'],
-)
 
 dependencies = []
 

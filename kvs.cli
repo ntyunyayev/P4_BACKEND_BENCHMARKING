@@ -18,8 +18,8 @@ pipeline libbuild /tmp/kv.c /tmp/kv.so
 ;
 ; Note: Customize the parameters below to match your setup.
 ;
-mempool MEMPOOL0 meta 0 pkt 2176 pool 32K cache 256 numa 0
-ethdev 0000:04:00.0 rxq 1 128 MEMPOOL0 txq 1 512 promiscuous on
+mempool MEMPOOL0 meta 0 pkt 9800 pool 32K cache 256 numa 0
+ethdev 0000:00:09.0 rxq 1 128 MEMPOOL0 txq 1 512 promiscuous on
 
 ;
 ; List of pipelines.

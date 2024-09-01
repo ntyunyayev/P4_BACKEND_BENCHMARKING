@@ -12,26 +12,26 @@
 
 struct kvs_hdr {
     int64_t key;
-    int64_t value;
+    int64_t val;
 };
 
 const uint16_t port = 0;
-const uint8_t kvs_protocol_id = 24
+const uint8_t kvs_protocol_id = 24;
 
-    const struct rte_ether_addr src_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x02}};
-const struct rte_ether_addr dst_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x00}};
+const struct rte_ether_addr src_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x02}};
+const struct rte_ether_addr dst_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x01}};
 
-void construct_request(struct rte_mbuf* pkt, int64 key, int64 val) {
+void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     // Ether hdr processing
-    struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(pkt, (struct rte_ether_hdr*));
-    eth_hdr->ether_type = rte_cpu_to_be_16(RTE_ETHER_TYPE_IPV4));
-    rte_ether_addr_copy(src_mac, eth_hdr->src_addr);
-    rte_ether_addr_copy(src_mac, eth_hdr->dst_addr);
+    struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(pkt, struct rte_ether_hdr*);
+    eth_hdr->ether_type = rte_cpu_to_be_16(RTE_ETHER_TYPE_IPV4);
+    rte_ether_addr_copy(&src_mac, &eth_hdr->src_addr);
+    rte_ether_addr_copy(&dst_mac, &eth_hdr->dst_addr);
     // IP processing
-    struct rte_ipv4_hdr ipv4_hdr = (eth_hdr + 1);
+    struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
     ipv4_hdr->next_proto_id = kvs_protocol_id;
     // KVS protocol processing
-    struct kvs_hdr* kvs_hdr = ipv4_hdr + 1;
+    struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(ipv4_hdr + 1);
     kvs_hdr->key = key;
     kvs_hdr->val = val;
 }
@@ -45,7 +45,9 @@ static int job(void* arg) {
     struct rte_mempool* pool = ctx->mpool;
     while (1) {
         printf("Enter a key and a value : ");
-        scanf("%d %d", &key, &val);
+        while (scanf("%d %d", &key, &val) != 2) {
+            printf("Invalid format, expect : 'KEY VALUE\n'");
+        };
         pkt = rte_pktmbuf_alloc(pool);
         if (pkt == NULL) {
             printf("Failed to allocate huge mbuf\n");
@@ -62,7 +64,6 @@ static int job(void* arg) {
 
 int main(int argc, char* argv[]) {
     // args
-    uint16_t portid;
     uint16_t lcore_id;
     int ret;
     /* Initializion the Environment Abstraction Layer (EAL). 8< */
@@ -70,11 +71,8 @@ int main(int argc, char* argv[]) {
     if (ret < 0) rte_exit(EXIT_FAILURE, "Error with EAL initialization\n");
     argc -= ret;
     argv += ret;
-    port = atoi(argv[1]);
-    printf("Choosing port %d\n", port);
     /* >8 End of initialization the Environment Abstraction Layer (EAL). */
     /* Allocates mempool to hold the mbufs. 8< */
-
     const uint16_t NB_QUEUES = 1;
     struct port_init_ctx* ctx =
         gu_port_init(port, NB_QUEUES, NB_QUEUES, GU_DEFAULT_RING_SIZE, GU_DEFAULT_RING_SIZE, GU_DEFAULT_MTU);
