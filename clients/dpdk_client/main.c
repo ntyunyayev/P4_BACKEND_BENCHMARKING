@@ -30,6 +30,7 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     rte_ether_addr_copy(&dst_mac, &eth_hdr->dst_addr);
     // IP processing
     struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
+    ipv4_hdr->hdr_checksum = rte_ipv4_cksum(ipv4_hdr);
     ipv4_hdr->next_proto_id = kvs_protocol_id;
     ipv4_hdr->time_to_live = 32;
     const char ip_src[128] = "192.168.100.1";
@@ -98,6 +99,7 @@ int receive_pkts(void) {
                 struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(bufs[i], struct rte_ether_hdr*);
                 printf("ether_type : %d\n", rte_be_to_cpu_16(eth_hdr->ether_type));
                 struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
+                gu_print_mac_addresses(bufs[i]);
                 printf("+++++++++++++++++++++++\n");
             }
             rte_pktmbuf_free(bufs[i]);
