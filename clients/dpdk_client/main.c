@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "gu.h"
+#include "rte_byteorder.h"
 
 struct kvs_hdr {
     int64_t key;
@@ -30,7 +31,7 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     // IP processing
     struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
     ipv4_hdr->next_proto_id = kvs_protocol_id;
-    ipv4_hdr->time_to_live = 64;
+    ipv4_hdr->time_to_live = 32;
     const char ip_src[128] = "192.168.100.1";
     const char ip_dst[128] = "192.168.100.2";
 
@@ -66,6 +67,7 @@ static int job(void* arg) {
         while (scanf("%d %d", &key, &val) != 2) {
             printf("Invalid format, expect : 'KEY VALUE\n'");
         };
+        pkt = NULL;
         pkt = rte_pktmbuf_alloc(pool);
         if (pkt == NULL) {
             printf("Failed to allocate huge mbuf\n");
@@ -77,7 +79,7 @@ static int job(void* arg) {
             printf("failed to send packet\n");
             rte_pktmbuf_free(pkt);
         } else {
-            printf("Pkt sent : %d\n",pkt->pkt_len);
+            printf("Pkt sent : %d\n", pkt->pkt_len);
         }
     }
 }
@@ -92,10 +94,11 @@ int receive_pkts(void) {
         }
         for (int i = 0; i < nb_rx; i++) {
             if (bufs[i]->pkt_len > 64) {
-                printf("#####Received packet#####\n");
-                printf("pkt_len : %d\n", bufs[i]->pkt_len);
-                printf("data_len : %d\n", bufs[i]->data_len);
-                printf("#########################\n");
+                printf("+++++++++++++++++++++++\n");
+                struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(bufs[i], struct rte_ether_hdr*);
+                printf("ether_type : %d\n", rte_be_to_cpu_16(eth_hdr->ether_type));
+                struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
+                printf("+++++++++++++++++++++++\n");
             }
             rte_pktmbuf_free(bufs[i]);
         }
