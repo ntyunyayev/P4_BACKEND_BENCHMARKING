@@ -113,7 +113,8 @@ int receive_pkts(void) {
                 if (rte_be_to_cpu_16(eth_hdr->ether_type) == RTE_ETHER_TYPE_IPV4) {
                     struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
                     printf("TTL : %d\n", ipv4_hdr->time_to_live);
-
+                    struct rte_udp_hdr* udp_hdr = (struct rte_udp_hdr*)(eth_hdr + 1);
+                    printf("dgram_len %d\n", udp_hdr->dgram_len);
                 }
                 printf("+++++++++++++++++++++++\n");
             }
