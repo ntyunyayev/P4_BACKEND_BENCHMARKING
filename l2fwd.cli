@@ -19,7 +19,7 @@ pipeline libbuild /tmp/l2fwd.c /tmp/l2fwd.so
 ; Note: Customize the parameters below to match your setup.
 ;
 mempool MEMPOOL0 meta 0 pkt 9800 pool 32K cache 256 numa 0
-ethdev 0000:00:09.0 rxq 1 32 MEMPOOL0 txq 1 32 promiscuous on
+ethdev 0000:00:09.0 rxq 1 128 MEMPOOL0 txq 1 512 promiscuous on
 
 ;
 ; List of pipelines.

@@ -18,4 +18,4 @@ port in 0 ethdev 0000:00:09.0 rxq 0 bsz 32
 ;
 ; Note: Customize the parameters below to match your setup.
 ;
-port out 0 ethdev 0000:00:09.0 txq 0 bsz 32
+port out 0 ethdev 0000:00:09.0 txq 0 bsz 1
