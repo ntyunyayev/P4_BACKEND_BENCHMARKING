@@ -37,7 +37,7 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     ipv4_hdr->time_to_live = 64;
     ipv4_hdr->total_length = rte_cpu_to_be_16(sizeof(struct rte_ipv4_hdr) + sizeof(struct rte_udp_hdr) +
                                               sizeof(struct kvs_hdr) + PADDING_SIZE);
-    ipv4_hdr->ihl = (uint8_t)4;
+    ipv4_hdr->version_ihl = (uint8_t)69;
     const char ip_src[128] = "192.168.100.1";
     const char ip_dst[128] = "192.168.100.2";
 
@@ -58,14 +58,14 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     ipv4_hdr->hdr_checksum = rte_ipv4_cksum(ipv4_hdr);
     // KVS protocol processing
     struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(udp_hdr + 1);
+    printf("key : %ld\n", key);
+    printf("val : %ld\n", val);
     kvs_hdr->key = key;
     kvs_hdr->val = val;
     int pkt_size = sizeof(struct rte_ether_hdr) + sizeof(struct rte_ipv4_hdr) + sizeof(struct rte_udp_hdr) +
                    sizeof(struct kvs_hdr) + PADDING_SIZE;
-    printf("size : %d\n", pkt_size);
     pkt->data_len = pkt_size;
     pkt->pkt_len = pkt_size;
-    gu_print_mac_addresses(pkt);
     printf("=================================\n");
 }
 
@@ -78,7 +78,7 @@ void print_packet(struct rte_mbuf* pkt) {
         struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
         printf("TTL : %d\n", ipv4_hdr->time_to_live);
         printf("total_length : %d\n", rte_be_to_cpu_16(ipv4_hdr->total_length));
-        printf("version_ihl : %d\n", ipv4_hdr->version_ihl);
+        printf("version_ihl : %" PRId8 "\n", ipv4_hdr->version_ihl);
         struct rte_udp_hdr* udp_hdr = (struct rte_udp_hdr*)(ipv4_hdr + 1);
         printf("dgram_len %d\n", rte_be_to_cpu_16(udp_hdr->dgram_len));
     }
@@ -103,7 +103,7 @@ static int job(void* arg) {
             return -1;
         }
         construct_request(pkt, key, val);
-        print_packet(pkt);
+        // print_packet(pkt);
         nb_tx = rte_eth_tx_burst(port, 0, &pkt, 1);
         if (unlikely(nb_tx != 1)) {
             printf("failed to send packet\n");
@@ -124,8 +124,16 @@ int receive_pkts(void) {
         }
         for (int i = 0; i < nb_rx; i++) {
             if (bufs[i]->pkt_len > 64) {
-                printf("pkt_len : %d\n", bufs[i]->pkt_len);
+                printf("/////received packet//////\n");
                 print_packet(bufs[i]);
+                printf("pkt_len : %d\n", bufs[i]->pkt_len);
+                struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(bufs[i], struct rte_ether_hdr*);
+                struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
+                struct rte_udp_hdr* udp_hdr = (struct rte_udp_hdr*)(ipv4_hdr + 1);
+                struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(udp_hdr + 1);
+                printf("received key : %ld\n", kvs_hdr->key);
+                printf("received value : %ld\n", kvs_hdr->val);
+                printf("/////////////////////////\n");
             }
             rte_pktmbuf_free(bufs[i]);
         }
