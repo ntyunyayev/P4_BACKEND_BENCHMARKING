@@ -2,11 +2,22 @@
 ; Copyright(c) 2020 Intel Corporation
 
 //
-// Meta-data.
+// Packet headers.
+//
+struct ethernet_h {
+	bit<48> dst_addr
+	bit<48> src_addr
+	bit<16> ether_type
+}
+
+header ethernet instanceof ethernet_h
+
+//
+// Packet meta-data.
 //
 struct metadata_t {
-	bit<32> port_in
-	bit<32> port_out
+	bit<32> port
+	bit<48> addr
 }
 
 metadata instanceof metadata_t
@@ -14,7 +25,10 @@ metadata instanceof metadata_t
 //
 // Actions.
 //
-action NoAction args none {
+action macswp args none {
+	mov m.addr h.ethernet.dst_addr
+	mov h.ethernet.dst_addr h.ethernet.src_addr
+	mov h.ethernet.src_addr m.addr
 	return
 }
 
@@ -26,17 +40,19 @@ table stub {
 	}
 
 	actions {
-		NoAction
+		macswp
 	}
 
-	default_action NoAction args none const
+	default_action macswp args none const
 }
 
 //
 // Pipeline.
 //
 apply {
-	rx m.port_in
+	rx m.port
+	extract h.ethernet
 	table stub
-	tx m.port_in
+	emit h.ethernet
+	tx m.port
 }
