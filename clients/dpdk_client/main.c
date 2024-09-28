@@ -12,6 +12,7 @@
 #include "rte_byteorder.h"
 #include "rte_ip.h"
 #include "rte_udp.h"
+#define PROTOCOL_PORT 1 << 15
 
 struct kvs_hdr {
     int64_t key;
@@ -36,13 +37,13 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     ipv4_hdr->time_to_live = 64;
     ipv4_hdr->total_length = rte_cpu_to_be_16(sizeof(struct rte_ipv4_hdr) + sizeof(struct rte_udp_hdr) +
                                               sizeof(struct kvs_hdr) + PADDING_SIZE);
-    ipv4_hdr->version_ihl = (uint8_t)69;
+    ipv4_hdr->ihl = (uint8_t)4;
     const char ip_src[128] = "192.168.100.1";
     const char ip_dst[128] = "192.168.100.2";
 
     struct rte_udp_hdr* udp_hdr = (struct rte_udp_hdr*)(ipv4_hdr + 1);
     udp_hdr->src_port = rte_cpu_to_be_16(10000);
-    udp_hdr->dst_port = rte_cpu_to_be_16(10001);
+    udp_hdr->dst_port = rte_cpu_to_be_16(PROTOCOL_PORT);
     udp_hdr->dgram_cksum = 0;
     udp_hdr->dgram_len = rte_cpu_to_be_16(sizeof(struct rte_udp_hdr) + sizeof(struct kvs_hdr) + PADDING_SIZE);
 

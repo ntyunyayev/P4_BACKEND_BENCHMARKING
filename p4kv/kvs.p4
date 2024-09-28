@@ -5,10 +5,12 @@
 #define inbound(meta) (istd.direction == PNA_Direction_t.NET_TO_HOST)
 #define outbound(meta) (istd.direction == PNA_Direction_t.HOST_TO_NET)
 
-#define IP_PROTOCOL_KEY 24
+#define IP_PROTOCOL_UDP 0x11 
+#define PROTOCOL_PORT 1 << 15
 
 typedef bit<48> ethernet_addr_t;
 typedef bit<32> ip_addr_t;
+typedef bit<16> udp_port_t;
 
 //
 // Packet headers.
@@ -36,7 +38,12 @@ header ipv4_t {
 	ip_addr_t src_addr;
 	ip_addr_t dst_addr;
 }
-
+header udp_t {
+    udp_port_t src_port;
+    udp_port_t dst_port;
+    bit<16> length_;
+    bit<16> checksum;
+}
 header key_t {
     bit<64> key;
     bit<64> value;
@@ -45,6 +52,7 @@ header key_t {
 struct headers_t {
 	ethernet_t ethernet;
 	ipv4_t ipv4;
+    udp_t udp;
 	key_t key;
 }
 
@@ -71,18 +79,25 @@ parser MainParserImpl(
 		pkt.extract(hdrs.ethernet);
 		transition select(hdrs.ethernet.ether_type) {
 			ETHERNET_ETHERTYPE_IPV4 : parse_ipv4;
-			default : accept;
+			default : drop;
 		}
 	}
 
 	state parse_ipv4 {
 		pkt.extract(hdrs.ipv4);
 		transition select(hdrs.ipv4.protocol) {
-			IP_PROTOCOL_KEY : parse_key;
-			default : accept;
+			IP_PROTOCOL_UDP : parse_udp;
+			default : drop;
 		}
 	}
 
+	state parse_udp {
+		pkt.extract(hdrs.udp);
+		transition select(hdrs.udp.dst_port) {
+			PROTOCOL_PORT : parse_key;
+			default : drop;
+		}
+	}
 	state parse_key {
 		pkt.extract(hdrs.key);
 		transition accept;
@@ -123,6 +138,12 @@ control MainControlImpl(
         tmp_ip = hdrs.ipv4.dst_addr;
         hdrs.ipv4.dst_addr = hdrs.ipv4.src_addr;
         hdrs.ipv4.src_addr = tmp_ip;
+
+        udp_port_t tmp_port;
+        tmp_port = hdrs.udp.dst_port;
+        hdrs.udp.dst_port = hdrs.udp.src_port;
+        hdrs.udp.src_port = tmp_port;
+
 
 		send_to_port((PortId_t)0);
 	}
