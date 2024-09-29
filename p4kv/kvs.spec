@@ -27,7 +27,8 @@ struct udp_t {
 }
 
 struct key_t {
-	bit<32> key
+	bit<8> type
+	bit<16> key
 	bit<32> value
 }
 
@@ -46,7 +47,7 @@ struct metadata_t {
 }
 metadata instanceof metadata_t
 
-regarray kv_store_0 size 0x400 initval 0x400
+regarray kv_store_0 size 0xFFFF initval 0x0
 regarray direction size 0x100 initval 0
 apply {
 	rx m.pna_main_input_metadata_input_port
@@ -64,7 +65,10 @@ apply {
 	MAINPARSERIMPL_ACCEPT :	jmpneq LABEL_FALSE m.pna_main_input_metadata_direction 0x0
 	jmpnv LABEL_FALSE h.ipv4
 	jmpnv LABEL_FALSE h.key
+	jmpneq LABEL_FALSE h.key.type 0x0
 	jmpneq LABEL_FALSE_0 h.key.value 0x0
+	regrd h.key.value kv_store_0 h.key.key
+	mov h.key.type 0x1
 	validate h.ethernet
 	mov m.MainControlT_tmp_mac h.ethernet.dst_addr
 	mov h.ethernet.dst_addr h.ethernet.src_addr
@@ -75,11 +79,21 @@ apply {
 	mov m.MainControlT_tmp_port h.udp.dst_port
 	mov h.udp.dst_port h.udp.src_port
 	mov h.udp.src_port m.MainControlT_tmp_port
-	regrd h.key.value kv_store_0 h.key.key
 	mov m.pna_main_output_metadata_output_port 0x0
 	jmp LABEL_END
 	LABEL_FALSE_0 :	regwr kv_store_0 h.key.key h.key.value
-	drop
+	mov h.key.type 0x2
+	validate h.ethernet
+	mov m.MainControlT_tmp_mac h.ethernet.dst_addr
+	mov h.ethernet.dst_addr h.ethernet.src_addr
+	mov h.ethernet.src_addr m.MainControlT_tmp_mac
+	mov m.MainControlT_tmp_ip h.ipv4.dst_addr
+	mov h.ipv4.dst_addr h.ipv4.src_addr
+	mov h.ipv4.src_addr m.MainControlT_tmp_ip
+	mov m.MainControlT_tmp_port h.udp.dst_port
+	mov h.udp.dst_port h.udp.src_port
+	mov h.udp.src_port m.MainControlT_tmp_port
+	mov m.pna_main_output_metadata_output_port 0x0
 	jmp LABEL_END
 	LABEL_FALSE :	drop
 	LABEL_END :	emit h.ethernet

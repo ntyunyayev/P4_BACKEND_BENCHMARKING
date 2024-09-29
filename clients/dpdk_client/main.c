@@ -14,18 +14,20 @@
 #include "rte_udp.h"
 #define PROTOCOL_PORT 1 << 15
 
-struct kvs_hdr {
-    uint32_t key;
+struct __attribute__((__packed__)) kvs_hdr {
+    uint8_t type;
+    uint16_t key;
     uint32_t val;
 };
 
-#define PADDING_SIZE 78
+#define PADDING_SIZE 81
 const uint16_t port = 0;
 const struct rte_ether_addr src_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x00}};
 const struct rte_ether_addr dst_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x01}};
 
 void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) { // Ether hdr processing
     printf("======Constructing packet=========\n");
+    printf("sizeof kvs_hdr : %ld\n", sizeof(struct kvs_hdr));
     struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(pkt, struct rte_ether_hdr*);
     eth_hdr->ether_type = rte_cpu_to_be_16(RTE_ETHER_TYPE_IPV4);
     rte_ether_addr_copy(&src_mac, &eth_hdr->src_addr);
@@ -57,10 +59,11 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) { // Ethe
     ipv4_hdr->hdr_checksum = rte_ipv4_cksum(ipv4_hdr);
     // KVS protocol processing
     struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(udp_hdr + 1);
-    printf("key : %ld\n", key);
-    printf("val : %ld\n", val);
-    kvs_hdr->key = htonl(key);
+    printf("key : %ld\n", (uint64_t)key);
+    printf("val : %ld\n", (uint64_t)val);
+    kvs_hdr->key = htons(key);
     kvs_hdr->val = htonl(val);
+    kvs_hdr->type = 0;
     int pkt_size = sizeof(struct rte_ether_hdr) + sizeof(struct rte_ipv4_hdr) + sizeof(struct rte_udp_hdr) +
                    sizeof(struct kvs_hdr) + PADDING_SIZE;
     pkt->data_len = pkt_size;
@@ -130,8 +133,9 @@ int receive_pkts(void) {
                 struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
                 struct rte_udp_hdr* udp_hdr = (struct rte_udp_hdr*)(ipv4_hdr + 1);
                 struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(udp_hdr + 1);
-                printf("received key : %" PRIu32 "\n", htonl(kvs_hdr->key));
+                printf("received key : %" PRIu16 "\n", htons(kvs_hdr->key));
                 printf("received value : %" PRIu32 "\n", htonl((kvs_hdr->val)));
+                printf("packet_type : %" PRIu8 "\n", kvs_hdr->type);
                 printf("/////////////////////////\n");
             }
             rte_pktmbuf_free(bufs[i]);

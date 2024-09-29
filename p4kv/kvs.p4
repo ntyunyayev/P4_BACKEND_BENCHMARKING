@@ -7,10 +7,15 @@
 
 #define IP_PROTOCOL_UDP 0x11 
 #define PROTOCOL_PORT 1 << 15
+#define MAX_KEY_VALUE 0xFFFF 
+#define REQUEST_PACKET 0
+#define RESPONSE_PACKET 1
+#define ACK_WRITE 2
 
 typedef bit<48> ethernet_addr_t;
 typedef bit<32> ip_addr_t;
 typedef bit<16> udp_port_t;
+typedef bit<8> packet_type_t;
 
 //
 // Packet headers.
@@ -45,7 +50,8 @@ header udp_t {
     bit<16> checksum;
 }
 header key_t {
-    bit<32> key;
+    packet_type_t type;
+    bit<16> key;
     bit<32> value;
 }
 
@@ -124,7 +130,7 @@ control MainControlImpl(
 	inout pna_main_output_metadata_t ostd)
 {
 
-    Register<bit<32>, bit<32>>(1024,1024) kv_store;
+    Register<bit<32>, bit<16>>(MAX_KEY_VALUE,0) kv_store;
 
 	action return_to_sender() {
 		hdrs.ethernet.setValid();
@@ -143,18 +149,19 @@ control MainControlImpl(
         tmp_port = hdrs.udp.dst_port;
         hdrs.udp.dst_port = hdrs.udp.src_port;
         hdrs.udp.src_port = tmp_port;
-
-        hdrs.key.value = kv_store.read(hdrs.key.key);
 		send_to_port((PortId_t)0);
 	}
 
 	apply {
-		if (inbound(meta) && hdrs.ipv4.isValid() && hdrs.key.isValid()) {
+		if (inbound(meta) && hdrs.ipv4.isValid() && hdrs.key.isValid() && hdrs.key.type == REQUEST_PACKET) {
 			if (hdrs.key.value == 0) {
+                hdrs.key.value = kv_store.read(hdrs.key.key);
+                hdrs.key.type = RESPONSE_PACKET;
                 return_to_sender();
             } else {
                 kv_store.write(hdrs.key.key, hdrs.key.value);
-                drop_packet();
+                hdrs.key.type = ACK_WRITE;
+                return_to_sender();
             }
 		} else {
 			drop_packet();
