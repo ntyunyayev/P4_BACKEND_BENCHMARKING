@@ -19,6 +19,13 @@ struct ipv4_t {
 	bit<32> dst_addr
 }
 
+struct udp_t {
+	bit<16> src_port
+	bit<16> dst_port
+	bit<16> length_
+	bit<16> checksum
+}
+
 struct key_t {
 	bit<64> key
 	bit<64> value
@@ -26,6 +33,7 @@ struct key_t {
 
 header ethernet instanceof ethernet_t
 header ipv4 instanceof ipv4_t
+header udp instanceof udp_t
 header key instanceof key_t
 
 struct metadata_t {
@@ -34,6 +42,7 @@ struct metadata_t {
 	bit<32> pna_main_output_metadata_output_port
 	bit<48> MainControlT_tmp_mac
 	bit<32> MainControlT_tmp_ip
+	bit<16> MainControlT_tmp_port
 }
 metadata instanceof metadata_t
 
@@ -46,7 +55,10 @@ apply {
 	jmpeq MAINPARSERIMPL_PARSE_IPV4 h.ethernet.ether_type 0x800
 	jmp MAINPARSERIMPL_ACCEPT
 	MAINPARSERIMPL_PARSE_IPV4 :	extract h.ipv4
-	jmpeq MAINPARSERIMPL_PARSE_KEY h.ipv4.protocol 0x18
+	jmpeq MAINPARSERIMPL_PARSE_UDP h.ipv4.protocol 0x11
+	jmp MAINPARSERIMPL_ACCEPT
+	MAINPARSERIMPL_PARSE_UDP :	extract h.udp
+	jmpeq MAINPARSERIMPL_PARSE_KEY h.udp.dst_port 0x8000
 	jmp MAINPARSERIMPL_ACCEPT
 	MAINPARSERIMPL_PARSE_KEY :	extract h.key
 	MAINPARSERIMPL_ACCEPT :	jmpneq LABEL_FALSE m.pna_main_input_metadata_direction 0x0
@@ -60,6 +72,9 @@ apply {
 	mov m.MainControlT_tmp_ip h.ipv4.dst_addr
 	mov h.ipv4.dst_addr h.ipv4.src_addr
 	mov h.ipv4.src_addr m.MainControlT_tmp_ip
+	mov m.MainControlT_tmp_port h.udp.dst_port
+	mov h.udp.dst_port h.udp.src_port
+	mov h.udp.src_port m.MainControlT_tmp_port
 	mov m.pna_main_output_metadata_output_port 0x0
 	jmp LABEL_END
 	LABEL_FALSE_0 :	regwr kv_store_0 h.key.key h.key.value
@@ -68,6 +83,7 @@ apply {
 	LABEL_FALSE :	drop
 	LABEL_END :	emit h.ethernet
 	emit h.ipv4
+	emit h.udp
 	emit h.key
 	tx m.pna_main_output_metadata_output_port
 }

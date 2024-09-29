@@ -79,7 +79,7 @@ parser MainParserImpl(
 		pkt.extract(hdrs.ethernet);
 		transition select(hdrs.ethernet.ether_type) {
 			ETHERNET_ETHERTYPE_IPV4 : parse_ipv4;
-			default : drop;
+			default : accept;
 		}
 	}
 
@@ -87,7 +87,7 @@ parser MainParserImpl(
 		pkt.extract(hdrs.ipv4);
 		transition select(hdrs.ipv4.protocol) {
 			IP_PROTOCOL_UDP : parse_udp;
-			default : drop;
+			default : accept;
 		}
 	}
 
@@ -95,7 +95,7 @@ parser MainParserImpl(
 		pkt.extract(hdrs.udp);
 		transition select(hdrs.udp.dst_port) {
 			PROTOCOL_PORT : parse_key;
-			default : drop;
+			default : accept;
 		}
 	}
 	state parse_key {
@@ -144,7 +144,6 @@ control MainControlImpl(
         hdrs.udp.dst_port = hdrs.udp.src_port;
         hdrs.udp.src_port = tmp_port;
 
-
 		send_to_port((PortId_t)0);
 	}
 
@@ -175,6 +174,7 @@ control MainDeparserImpl(
 	apply {
 		pkt.emit(hdrs.ethernet);
 		pkt.emit(hdrs.ipv4);
+		pkt.emit(hdrs.udp);
 		pkt.emit(hdrs.key);
 	}
 }
