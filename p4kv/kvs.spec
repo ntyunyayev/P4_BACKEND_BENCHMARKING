@@ -27,8 +27,8 @@ struct udp_t {
 }
 
 struct key_t {
-	bit<64> key
-	bit<64> value
+	bit<32> key
+	bit<32> value
 }
 
 header ethernet instanceof ethernet_t
@@ -46,7 +46,7 @@ struct metadata_t {
 }
 metadata instanceof metadata_t
 
-regarray kv_store_0 size 0x400 initval 0
+regarray kv_store_0 size 0x400 initval 0x400
 regarray direction size 0x100 initval 0
 apply {
 	rx m.pna_main_input_metadata_input_port
@@ -75,6 +75,7 @@ apply {
 	mov m.MainControlT_tmp_port h.udp.dst_port
 	mov h.udp.dst_port h.udp.src_port
 	mov h.udp.src_port m.MainControlT_tmp_port
+	regrd h.key.value kv_store_0 h.key.key
 	mov m.pna_main_output_metadata_output_port 0x0
 	jmp LABEL_END
 	LABEL_FALSE_0 :	regwr kv_store_0 h.key.key h.key.value

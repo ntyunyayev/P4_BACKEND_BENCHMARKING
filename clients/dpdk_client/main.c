@@ -15,17 +15,16 @@
 #define PROTOCOL_PORT 1 << 15
 
 struct kvs_hdr {
-    int64_t key;
-    int64_t val;
+    uint32_t key;
+    uint32_t val;
 };
 
-#define PADDING_SIZE 66
+#define PADDING_SIZE 78
 const uint16_t port = 0;
 const struct rte_ether_addr src_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x00}};
 const struct rte_ether_addr dst_mac = {{0x02, 0x00, 0x83, 0x01, 0x00, 0x01}};
 
-void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
-    // Ether hdr processing
+void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) { // Ether hdr processing
     printf("======Constructing packet=========\n");
     struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(pkt, struct rte_ether_hdr*);
     eth_hdr->ether_type = rte_cpu_to_be_16(RTE_ETHER_TYPE_IPV4);
@@ -60,8 +59,8 @@ void construct_request(struct rte_mbuf* pkt, int64_t key, int64_t val) {
     struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(udp_hdr + 1);
     printf("key : %ld\n", key);
     printf("val : %ld\n", val);
-    kvs_hdr->key = key;
-    kvs_hdr->val = val;
+    kvs_hdr->key = htonl(key);
+    kvs_hdr->val = htonl(val);
     int pkt_size = sizeof(struct rte_ether_hdr) + sizeof(struct rte_ipv4_hdr) + sizeof(struct rte_udp_hdr) +
                    sizeof(struct kvs_hdr) + PADDING_SIZE;
     pkt->data_len = pkt_size;
@@ -123,16 +122,16 @@ int receive_pkts(void) {
             continue;
         }
         for (int i = 0; i < nb_rx; i++) {
-            if (bufs[i]->pkt_len > 64) {
-                printf("/////received packet//////\n");
+            if (bufs[i]->pkt_len >= 128) {
+                printf("\n\n/////received packet//////\n");
                 print_packet(bufs[i]);
                 printf("pkt_len : %d\n", bufs[i]->pkt_len);
                 struct rte_ether_hdr* eth_hdr = rte_pktmbuf_mtod(bufs[i], struct rte_ether_hdr*);
                 struct rte_ipv4_hdr* ipv4_hdr = (struct rte_ipv4_hdr*)(eth_hdr + 1);
                 struct rte_udp_hdr* udp_hdr = (struct rte_udp_hdr*)(ipv4_hdr + 1);
                 struct kvs_hdr* kvs_hdr = (struct kvs_hdr*)(udp_hdr + 1);
-                printf("received key : %ld\n", kvs_hdr->key);
-                printf("received value : %ld\n", kvs_hdr->val);
+                printf("received key : %" PRIu32 "\n", htonl(kvs_hdr->key));
+                printf("received value : %" PRIu32 "\n", htonl((kvs_hdr->val)));
                 printf("/////////////////////////\n");
             }
             rte_pktmbuf_free(bufs[i]);

@@ -45,8 +45,8 @@ header udp_t {
     bit<16> checksum;
 }
 header key_t {
-    bit<64> key;
-    bit<64> value;
+    bit<32> key;
+    bit<32> value;
 }
 
 struct headers_t {
@@ -124,7 +124,7 @@ control MainControlImpl(
 	inout pna_main_output_metadata_t ostd)
 {
 
-    Register<bit<64>, bit<64>>(1024) kv_store;
+    Register<bit<32>, bit<32>>(1024,1024) kv_store;
 
 	action return_to_sender() {
 		hdrs.ethernet.setValid();
@@ -144,13 +144,13 @@ control MainControlImpl(
         hdrs.udp.dst_port = hdrs.udp.src_port;
         hdrs.udp.src_port = tmp_port;
 
+        hdrs.key.value = kv_store.read(hdrs.key.key);
 		send_to_port((PortId_t)0);
 	}
 
 	apply {
 		if (inbound(meta) && hdrs.ipv4.isValid() && hdrs.key.isValid()) {
 			if (hdrs.key.value == 0) {
-                kv_store.read(hdrs.key.key);
                 return_to_sender();
             } else {
                 kv_store.write(hdrs.key.key, hdrs.key.value);
